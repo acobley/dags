@@ -10,6 +10,7 @@ from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 import requests
 import json
+import mysql.connector
 
 BaseDir="/opt/airflow/data"
 RawFiles=BaseDir+"/Raw/"
@@ -24,6 +25,22 @@ uniqDateCommand="sort -u "+Staging+"DimDate.txt > "+Staging+'DimDateUniq.txt'
 
 # uniqCommand="sort -u -o "+Staging+"DimIPUniq.txt " +Staging+"DimIP.txt"
 # 2>"+Staging+"errors.txt"
+try:   
+   os.mkdir(BaseDir)
+except:
+   print("Can't make BaseDir")
+try:
+   os.mkdir(RawFiles)
+except:
+   print("Can't make BaseDir") 
+try: 
+   os.mkdir(Staging)
+except:
+   print("Can't make BaseDir") 
+try:
+   os.mkdir(StarSchema)
+except:
+   print("Can't make BaseDir") 
 
 
 def CleanHash(filename):
@@ -224,6 +241,14 @@ uniq2 = BashOperator(
 
     dag=dag,
 )
+
+copyfact = BashOperator(
+    task_id="copyfact",
+#    bash_command=uniqDateCommand,
+     bash_command="cp /opt/airflow/data/Staging/OutFact1.txt /opt/airflow/data/StarSchema/OutFact1.txt",
+
+    dag=dag,
+)
  
   
 # download_data >> BuildFact1 >>DimIp>>DateTable>>uniq>>uniq2>>BuildDimDate>>IPTable
@@ -235,3 +260,4 @@ uniq2.set_upstream(task_or_task_list=[DateTable])
 uniq.set_upstream(task_or_task_list=[DimIp])
 BuildDimDate.set_upstream(task_or_task_list=[uniq2])
 IPTable.set_upstream(task_or_task_list=[uniq])
+copyfact.set_upstream(task_or_task_list=[IPTable,BuildDimDate])
